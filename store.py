@@ -57,20 +57,49 @@ def get_cart_items_by_reference(token, cart_id):
     return response.json()
 
 
+def get_product_by_id(token, product_id):
+    url = f"https://api.moltin.com/pcm/products/{product_id}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    params = {'include': "component_products"}
+    response = requests.get(url, headers=headers, params=params)
+    return response.json()
+
+
+def get_product_price(token, price_books_id, product_sku):
+    url = f"https://api.moltin.com/pcm/pricebooks/{price_books_id}"
+    params = {"include": "prices"}
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    response = requests.get(url, headers=headers, params=params)
+    items = response.json()["included"]
+    price_id = ""
+    for item in items:
+        if product_sku in item["attributes"]["sku"]:
+            price_id = item["id"]
+    url = f"https://api.moltin.com/pcm/pricebooks/{price_books_id}/prices/{price_id}"
+    response = requests.get(url, headers=headers)
+    return response.json()
+
+
 if __name__ == "__main__":
     load_dotenv()
     client_id = os.environ["CLIENT_ID"]
     client_secret = os.environ["CLIENT_SECRET"]
+    price_book_id = os.environ["PRICE_BOOK_ID"]
     access_token = get_token(client_id, client_secret)
+
 
     # print(create_custom_card(access_token))
 
     # get_cart_by_reference(access_token, "73d5abae-1a2a-4e29-be42-beac6414885d")
-    get_cart_items_by_reference(access_token, "73d5abae-1a2a-4e29-be42-beac6414885d")
+    #get_cart_items_by_reference(access_token, "73d5abae-1a2a-4e29-be42-beac6414885d")
 
     # products = get_all_products(access_token)
-    # print(products)
+    # print(len(products["data"]))
     # products_id = [product["id"] for product in products["data"]]
     # print(products_id)
     # reference = "73d5abae-1a2a-4e29-be42-beac6414885d"
     # print(add_product_to_cart(access_token, reference, products_id[0]))
+
+    #print(get_product_by_id(access_token, "1a6797f8-f561-4e56-a016-3380851f0845"))
+    #print(get_price_product(access_token, price_book_id, "3"))
+

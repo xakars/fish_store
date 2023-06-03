@@ -2,49 +2,42 @@ import os
 import logging
 import redis
 from dotenv import load_dotenv
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
-
-_database = None
+from store import get_all_products, get_token, get_product_by_id, get_product_price
 
 
 def start(update, context):
-    """
-    Хэндлер для состояния START.
+    products = get_all_products(access_token)["data"]
+    keyboard = [
+        [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in products
+    ]
 
-    Бот отвечает пользователю фразой "Привет!" и переводит его в состояние ECHO.
-    Теперь в ответ на его команды будет запускаеться хэндлер echo.
-    """
-    update.message.reply_text(text='Привет!')
-    return "ECHO"
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text='Please choose',
+                             reply_markup=reply_markup)
+    return "MENU"
 
 
-def echo(update, context):
-    """
-    Хэндлер для состояния ECHO.
-
-    Бот отвечает пользователю тем же, что пользователь ему написал.
-    Оставляет пользователя в состоянии ECHO.
-    """
-    users_reply = update.message.text
-    update.message.reply_text(users_reply)
-    return "ECHO"
+def handle_menu(update, context):
+    user_reply = update.callback_query
+    if user_reply:
+        product_id = update.callback_query.data
+        product = get_product_by_id(access_token, product_id)
+        product_attributes = product["data"]["attributes"]
+        product_price = get_product_price(access_token, price_book_id, product_attributes["sku"])
+        final_price = product_price["data"]["attributes"]["currencies"]["USD"]["amount"]
+        template = f"{product_attributes['name']}\n\n" \
+                   f"${final_price} per kg\n\n" \
+                   f"{product_attributes['description']}"
+        context.bot.send_message(chat_id=update.effective_chat.id, text=template)
+        return "START"
 
 
 def handle_users_reply(update, context):
-    """
-    Функция, которая запускается при любом сообщении от пользователя и решает как его обработать.
-    Эта функция запускается в ответ на эти действия пользователя:
-        * Нажатие на inline-кнопку в боте
-        * Отправка сообщения боту
-        * Отправка команды боту
-    Она получает стейт пользователя из базы данных и запускает соответствующую функцию-обработчик (хэндлер).
-    Функция-обработчик возвращает следующее состояние, которое записывается в базу данных.
-    Если пользователь только начал пользоваться ботом, Telegram форсит его написать "/start",
-    поэтому по этой фразе выставляется стартовое состояние.
-    Если пользователь захочет начать общение с ботом заново, он также может воспользоваться этой командой.
-    """
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -60,12 +53,9 @@ def handle_users_reply(update, context):
 
     states_functions = {
         'START': start,
-        'ECHO': echo
+        'MENU': handle_menu
     }
     state_handler = states_functions[user_state]
-    # Если вы вдруг не заметите, что python-telegram-bot перехватывает ошибки.
-    # Оставляю этот try...except, чтобы код не падал молча.
-    # Этот фрагмент можно переписать.
     try:
         next_state = state_handler(update, context)
         r.set(chat_id, next_state)
@@ -73,24 +63,17 @@ def handle_users_reply(update, context):
         print(err)
 
 
-# def get_database_connection():
-#     """
-#     Возвращает конекшн с базой данных Redis, либо создаёт новый, если он ещё не создан.
-#     """
-#     global _database
-#     if _database is None:
-#         database_password = os.getenv("DATABASE_PASSWORD")
-#         database_host = os.getenv("DATABASE_HOST")
-#         database_port = os.getenv("DATABASE_PORT")
-#         _database = redis.Redis(host=database_host, port=database_port, password=database_password)
-#     return _database
-
-
 if __name__ == '__main__':
     r = redis.Redis(host='localhost', port=6379, db=0)
 
     load_dotenv()
     token = os.getenv("TELEGRAM_TOKEN")
+    client_id = os.environ["CLIENT_ID"]
+    client_secret = os.environ["CLIENT_SECRET"]
+    price_book_id = os.environ["PRICE_BOOK_ID"]
+
+    access_token = get_token(client_id, client_secret)
+
     updater = Updater(token=token, use_context=True)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
