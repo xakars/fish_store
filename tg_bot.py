@@ -43,15 +43,34 @@ def handle_menu(update, context):
         if os.path.exists(f"./media/{photo_name}"):
             with open(f"./media/{photo_name}", "rb") as file:
                 photo = file.read()
-                context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
+                message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
                 context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
+
         else:
             path_to_img = save_image(photo_url, photo_name)
             with open(path_to_img, "rb") as file:
                 photo = file.read()
-                context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
+                message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
                 context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
-        return "START"
+
+        keyboard = [[InlineKeyboardButton("Назад", callback_data='back')]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        context.bot.edit_message_caption(chat_id=update.effective_chat.id, message_id=message.message_id,
+                                         caption=template, parse_mode='Markdown', reply_markup=reply_markup)
+        return "HANDLE_DESCRIPTION"
+
+
+def handle_description(update, context):
+    products = get_all_products(access_token)["data"]
+    keyboard = [
+        [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in products
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text='Please choose',
+                             reply_markup=reply_markup)
+    return "MENU"
 
 
 def handle_users_reply(update, context):
@@ -70,7 +89,8 @@ def handle_users_reply(update, context):
 
     states_functions = {
         'START': start,
-        'MENU': handle_menu
+        'MENU': handle_menu,
+        'HANDLE_DESCRIPTION': handle_description
     }
     state_handler = states_functions[user_state]
     try:
