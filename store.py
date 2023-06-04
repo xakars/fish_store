@@ -80,6 +80,20 @@ def get_product_price(token, price_books_id, product_sku):
     return response.json()
 
 
+def get_file_by_product_id(token, product_id):
+    url = f"https://api.moltin.com/pcm/products/{product_id}/relationships/main_image"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    response = requests.get(url, headers=headers)
+    return response.json()["data"]
+
+
+def get_file_by_id(token, file_id):
+    url = f"https://api.moltin.com/v2/files/{file_id}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    response = requests.get(url, headers=headers)
+    return response.json()["data"]
+
+
 if __name__ == "__main__":
     load_dotenv()
     client_id = os.environ["CLIENT_ID"]
@@ -102,4 +116,8 @@ if __name__ == "__main__":
 
     #print(get_product_by_id(access_token, "1a6797f8-f561-4e56-a016-3380851f0845"))
     #print(get_price_product(access_token, price_book_id, "3"))
+
+    #add_image_for_product(access_token, "1a6797f8-f561-4e56-a016-3380851f0845", "./images.jpeg")
+    #print(get_file_by_product_id(access_token, "1a6797f8-f561-4e56-a016-3380851f0845"))
+    print(get_file_by_id(access_token, "edbcb730-77a2-4fa4-aca7-21f2be2cb1ae"))
 
