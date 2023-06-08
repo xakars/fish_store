@@ -1,5 +1,4 @@
 import os
-import logging
 import redis
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -17,8 +16,7 @@ from store import (get_all_products,
                    get_cart_items_by_reference,
                    remove_cart_item
                    )
-from tools import save_image
-from format_helper import get_cart_template
+from helper import get_cart_template, get_photo_path
 
 
 def get_menu():
@@ -70,20 +68,9 @@ def handle_menu(update, context):
 
     product_file_id = get_file_by_product_id(access_token, product_id)["id"]
     prodict_photo = get_file_by_id(access_token, product_file_id)
-    photo_url = prodict_photo["link"]["href"]
-    photo_name = prodict_photo["file_name"]
-    if os.path.exists(f"./media/{photo_name}"):
-        with open(f"./media/{photo_name}", "rb") as file:
-            photo = file.read()
-            message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
-            context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
-
-    else:
-        path_to_img = save_image(photo_url, photo_name)
-        with open(path_to_img, "rb") as file:
-            photo = file.read()
-            message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
-            context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
+    path_to_photo = get_photo_path(prodict_photo)
+    with open(f"{path_to_photo}", "rb") as file:
+        photo = file.read()
 
     keyboard = [
         [InlineKeyboardButton("1 kg", callback_data=f'1 {product_id}'),
@@ -93,8 +80,12 @@ def handle_menu(update, context):
         [InlineKeyboardButton("Назад", callback_data='back')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
+    message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
     context.bot.edit_message_caption(chat_id=update.effective_chat.id, message_id=message.message_id,
                                      caption=template, parse_mode='Markdown', reply_markup=reply_markup)
+    context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
+
     return "HANDLE_DESCRIPTION"
 
 

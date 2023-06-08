@@ -103,26 +103,3 @@ if __name__ == "__main__":
     access_token = get_token(client_id, client_secret)
 
 
-    # print(create_custom_card(access_token))
-
-    #print(get_cart_by_reference(access_token, 83609395))
-    #print(get_cart_items_by_reference(access_token, 83609395))
-    #print(remove_cart_item(access_token, "83609395", "1a6797f8-f561-4e56-a016-3380851f0845"))
-    # products = get_all_products(access_token)
-    # print(len(products["data"]))
-    # products_id = [product["id"] for product in products["data"]]
-
-    # products_id = "1eb210ef-013b-487f-a4fd-615505f4c740"
-    # reference = "kama_pulya"
-    # print(add_product_to_cart(access_token, reference, products_id))
-
-    #print(get_cart_items_by_reference(access_token, ))
-    #print(get_product_by_id(access_token, "1a6797f8-f561-4e56-a016-3380851f0845"))
-    #print(get_price_product(access_token, price_book_id, "3"))
-
-    #add_image_for_product(access_token, "1a6797f8-f561-4e56-a016-3380851f0845", "./images.jpeg")
-    #print(get_file_by_product_id(access_token, "1a6797f8-f561-4e56-a016-3380851f0845"))
-    #print(get_file_by_id(access_token, "edbcb730-77a2-4fa4-aca7-21f2be2cb1ae"))
-
-    #print(get_all_products_v2(access_token))
-
