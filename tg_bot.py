@@ -17,6 +17,7 @@ from store import (get_all_products,
                    get_cart_items_by_reference
                    )
 from tools import save_image
+from format_helper import get_cart_template
 
 
 def start(update, context):
@@ -24,7 +25,7 @@ def start(update, context):
     keyboard = [
         [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in products
     ]
-
+    keyboard.append([InlineKeyboardButton("Корзина", callback_data='cart')])
     reply_markup = InlineKeyboardMarkup(keyboard)
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text='Please choose',
@@ -33,47 +34,53 @@ def start(update, context):
 
 
 def handle_menu(update, context):
-    user_reply = update.callback_query
-    if user_reply:
-        product_id = update.callback_query.data
-        product = get_product_by_id(access_token, product_id)
-        product_attributes = product["data"]["attributes"]
-        product_price = get_product_price(access_token, price_book_id, product_attributes["sku"])
-        final_price = product_price["data"]["attributes"]["currencies"]["USD"]["amount"]
+    if update.callback_query.data == 'cart':
+        chat_id = update.callback_query.message.chat_id
+        cart_items = get_cart_items_by_reference(access_token, chat_id)
+        text = get_cart_template(cart_items)
+        context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        return
 
-        template = f"{product_attributes['name']}\n\n" \
-                   f"${final_price} per kg\n" \
-                   f"100kg on stock\n\n" \
-                   f"{product_attributes['description']}"
+    product_id = update.callback_query.data
+    product = get_product_by_id(access_token, product_id)
 
-        product_file_id = get_file_by_product_id(access_token, product_id)["id"]
-        prodict_photo = get_file_by_id(access_token, product_file_id)
-        photo_url = prodict_photo["link"]["href"]
-        photo_name = prodict_photo["file_name"]
-        if os.path.exists(f"./media/{photo_name}"):
-            with open(f"./media/{photo_name}", "rb") as file:
-                photo = file.read()
-                message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
-                context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
+    product_attributes = product["data"]["attributes"]
+    product_price = get_product_price(access_token, price_book_id, product_attributes["sku"])
+    final_price = product_price["data"]["attributes"]["currencies"]["USD"]["amount"]
 
-        else:
-            path_to_img = save_image(photo_url, photo_name)
-            with open(path_to_img, "rb") as file:
-                photo = file.read()
-                message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
-                context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
+    template = f"{product_attributes['name']}\n\n" \
+               f"${final_price} per kg\n" \
+               f"100kg on stock\n\n" \
+               f"{product_attributes['description']}"
 
-        keyboard = [
-            [InlineKeyboardButton("1 kg", callback_data=f'1 {product_id}'),
-             InlineKeyboardButton("5 kg", callback_data=f'5 {product_id}'),
-             InlineKeyboardButton("10 kg", callback_data=f'10 {product_id}')],
-            [InlineKeyboardButton("Корзина", callback_data='cart')],
-            [InlineKeyboardButton("Назад", callback_data='back')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        context.bot.edit_message_caption(chat_id=update.effective_chat.id, message_id=message.message_id,
-                                         caption=template, parse_mode='Markdown', reply_markup=reply_markup)
-        return "HANDLE_DESCRIPTION"
+    product_file_id = get_file_by_product_id(access_token, product_id)["id"]
+    prodict_photo = get_file_by_id(access_token, product_file_id)
+    photo_url = prodict_photo["link"]["href"]
+    photo_name = prodict_photo["file_name"]
+    if os.path.exists(f"./media/{photo_name}"):
+        with open(f"./media/{photo_name}", "rb") as file:
+            photo = file.read()
+            message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
+            context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
+
+    else:
+        path_to_img = save_image(photo_url, photo_name)
+        with open(path_to_img, "rb") as file:
+            photo = file.read()
+            message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
+            context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
+
+    keyboard = [
+        [InlineKeyboardButton("1 kg", callback_data=f'1 {product_id}'),
+         InlineKeyboardButton("5 kg", callback_data=f'5 {product_id}'),
+         InlineKeyboardButton("10 kg", callback_data=f'10 {product_id}')],
+        [InlineKeyboardButton("Корзина", callback_data='cart')],
+        [InlineKeyboardButton("Назад", callback_data='back')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    context.bot.edit_message_caption(chat_id=update.effective_chat.id, message_id=message.message_id,
+                                     caption=template, parse_mode='Markdown', reply_markup=reply_markup)
+    return "HANDLE_DESCRIPTION"
 
 
 def handle_description(update, context):
@@ -94,6 +101,8 @@ def handle_description(update, context):
     elif update.callback_query.data == 'cart':
         chat_id = update.callback_query.message.chat_id
         cart_items = get_cart_items_by_reference(access_token, chat_id)
+        text = get_cart_template(cart_items)
+        context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
     else:
         chat_id = update.callback_query.message.chat_id

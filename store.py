@@ -33,7 +33,6 @@ def add_product_to_cart(token, reference, product_id, quantity):
         }
     }
     response = requests.post(url, headers=headers, json=data)
-    print(response.text)
     response.raise_for_status()
     return response.json()
 
@@ -49,7 +48,7 @@ def get_cart_items_by_reference(token, cart_id):
     url = f"https://api.moltin.com/v2/carts/{cart_id}/items"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
-    return response.json()["data"]
+    return response.json()
 
 
 def remove_cart_item(token, cart_id, product_id):
