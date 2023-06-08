@@ -1,6 +1,4 @@
 import requests
-from dotenv import load_dotenv
-import os
 
 
 def get_token(client_id, client_secret):
@@ -41,6 +39,7 @@ def get_cart_by_reference(token, cart_id):
     url = f"https://api.moltin.com/v2/carts/{cart_id}"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
     return response.json()["data"]["id"]
 
 
@@ -48,6 +47,7 @@ def get_cart_items_by_reference(token, cart_id):
     url = f"https://api.moltin.com/v2/carts/{cart_id}/items"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
@@ -55,6 +55,7 @@ def remove_cart_item(token, cart_id, product_id):
     url = f"https://api.moltin.com/v2/carts/{cart_id}/items/{product_id}"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.delete(url, headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
@@ -63,6 +64,7 @@ def get_product_by_id(token, product_id):
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     params = {'include': "component_products"}
     response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
     return response.json()
 
 
@@ -71,6 +73,7 @@ def get_product_price(token, price_books_id, product_sku):
     params = {"include": "prices"}
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
     items = response.json()["included"]
     price_id = ""
     for item in items:
@@ -85,6 +88,7 @@ def get_file_by_product_id(token, product_id):
     url = f"https://api.moltin.com/pcm/products/{product_id}/relationships/main_image"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
     return response.json()["data"]
 
 
@@ -92,6 +96,5 @@ def get_file_by_id(token, file_id):
     url = f"https://api.moltin.com/v2/files/{file_id}"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
     return response.json()["data"]
-
-
