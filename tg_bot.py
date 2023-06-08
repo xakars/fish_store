@@ -14,33 +14,48 @@ from store import (get_all_products,
                    get_file_by_id,
                    get_cart_by_reference,
                    add_product_to_cart,
-                   get_cart_items_by_reference
+                   get_cart_items_by_reference,
+                   remove_cart_item
                    )
 from tools import save_image
 from format_helper import get_cart_template
 
 
-def start(update, context):
+def get_menu():
     products = get_all_products(access_token)["data"]
     keyboard = [
-        [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in products
+        [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in
+        products
     ]
     keyboard.append([InlineKeyboardButton("Корзина", callback_data='cart')])
     reply_markup = InlineKeyboardMarkup(keyboard)
+    return reply_markup
+
+
+def start(update, context):
+    keyboard = get_menu()
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text='Please choose',
-                             reply_markup=reply_markup)
+                             reply_markup=keyboard)
     return "MENU"
 
 
 def handle_menu(update, context):
     if update.callback_query.data == 'cart':
         chat_id = update.callback_query.message.chat_id
-        cart_items = get_cart_items_by_reference(access_token, chat_id)
-        text = get_cart_template(cart_items)
-        context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-        return
+        text, keyboard = get_user_cart(chat_id)
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=keyboard
+        )
+        context.bot.delete_message(
+            chat_id=update.effective_chat.id,
+            message_id=update.callback_query.message.message_id
+        )
+        return 'HANDLE_CART'
 
+    user_reply = update.callback_query
     product_id = update.callback_query.data
     product = get_product_by_id(access_token, product_id)
 
@@ -83,33 +98,68 @@ def handle_menu(update, context):
     return "HANDLE_DESCRIPTION"
 
 
-def handle_description(update, context):
-    if update.callback_query.data == 'back':
-        products = get_all_products(access_token)["data"]
-        keyboard = [
-            [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in
-            products
-        ]
+def get_user_cart(chat_id):
+    cart_items = get_cart_items_by_reference(access_token, chat_id)
+    text = get_cart_template(cart_items)
+    cart_items = get_cart_items_by_reference(access_token, chat_id)
+    keyboard = [
+        [InlineKeyboardButton(f"Убрать из корзины {item['name']}", callback_data=f"{item['id']}")] for item in cart_items["data"]
+    ]
+    keyboard.append([InlineKeyboardButton("В меню", callback_data='menu')])
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    return text, reply_markup
+
+
+def handle_cart(update, context):
+    if update.callback_query.data == 'menu':
+        keyboard = get_menu()
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text='Please choose',
-                                 reply_markup=reply_markup)
+                                 reply_markup=keyboard)
+        context.bot.delete_message(chat_id=update.effective_chat.id,
+                                   message_id=update.callback_query.message.message_id)
+        return 'MENU'
+    else:
+        chat_id = update.callback_query.message.chat_id
+        product_id = update.callback_query.data
+        remove_cart_item(access_token, chat_id, product_id)
+        text, keyboard = get_user_cart(chat_id)
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=text,
+                                 reply_markup=keyboard)
+        context.bot.delete_message(chat_id=update.effective_chat.id,
+                                   message_id=update.callback_query.message.message_id)
+    return 'HANDLE_CART'
+
+
+def handle_description(update, context):
+    if update.callback_query.data == 'back':
+        keyboard = get_menu()
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text='Please choose',
+                                 reply_markup=keyboard)
+
         context.bot.delete_message(chat_id=update.effective_chat.id,
                                    message_id=update.callback_query.message.message_id)
         return "MENU"
+
     elif update.callback_query.data == 'cart':
         chat_id = update.callback_query.message.chat_id
-        cart_items = get_cart_items_by_reference(access_token, chat_id)
-        text = get_cart_template(cart_items)
-        context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        text, keyboard = get_user_cart(chat_id)
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=text,
+                                 reply_markup=keyboard)
+        context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.callback_query.message.message_id)
+
+        return 'HANDLE_CART'
 
     else:
         chat_id = update.callback_query.message.chat_id
         cart_id = get_cart_by_reference(access_token, chat_id)
         quantity, product_id = update.callback_query.data.split()
         add_product_to_cart(access_token, cart_id, product_id, quantity)
-        print("Товар добавлен")
+        update.callback_query.answer("Товар успешно добавлен в корзину!")
         return "HANDLE_DESCRIPTION"
 
 
@@ -130,7 +180,8 @@ def handle_users_reply(update, context):
     states_functions = {
         'START': start,
         'MENU': handle_menu,
-        'HANDLE_DESCRIPTION': handle_description
+        'HANDLE_DESCRIPTION': handle_description,
+        'HANDLE_CART': handle_cart
     }
     state_handler = states_functions[user_state]
     try:
