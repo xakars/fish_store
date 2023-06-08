@@ -95,11 +95,3 @@ def get_file_by_id(token, file_id):
     return response.json()["data"]
 
 
-if __name__ == "__main__":
-    load_dotenv()
-    client_id = os.environ["CLIENT_ID"]
-    client_secret = os.environ["CLIENT_SECRET"]
-    price_book_id = os.environ["PRICE_BOOK_ID"]
-    access_token = get_token(client_id, client_secret)
-
-
