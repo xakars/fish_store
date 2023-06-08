@@ -20,26 +20,21 @@ def get_all_products(token):
     return response.json()
 
 
-def add_product_to_cart(token, reference, product_id):
+def add_product_to_cart(token, reference, product_id, quantity):
     url = f"https://api.moltin.com/v2/carts/{reference}/items"
     headers = {
         "Authorization": f"Bearer {token}",
     }
-    data = {"data": {"id": product_id, "type": "cart_item", "quantity": 1}}
-    response = requests.post(url, headers=headers, json=data)
-    response.raise_for_status()
-    return response.json()
-
-
-def create_custom_card(token):
-    url = "https://api.moltin.com/v2/carts"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     data = {
         "data": {
-            "name": "Petr’s cart",
+            "id": product_id,
+            "type": "cart_item",
+            "quantity": int(quantity)
         }
     }
     response = requests.post(url, headers=headers, json=data)
+    print(response.text)
+    response.raise_for_status()
     return response.json()
 
 
@@ -47,13 +42,20 @@ def get_cart_by_reference(token, cart_id):
     url = f"https://api.moltin.com/v2/carts/{cart_id}"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
-    return response.json()
+    return response.json()["data"]["id"]
 
 
 def get_cart_items_by_reference(token, cart_id):
     url = f"https://api.moltin.com/v2/carts/{cart_id}/items"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     response = requests.get(url, headers=headers)
+    return response.json()["data"]
+
+
+def remove_cart_item(token, cart_id, product_id):
+    url = f"https://api.moltin.com/v2/carts/{cart_id}/items/{product_id}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    response = requests.delete(url, headers=headers)
     return response.json()
 
 
@@ -104,20 +106,24 @@ if __name__ == "__main__":
 
     # print(create_custom_card(access_token))
 
-    # get_cart_by_reference(access_token, "73d5abae-1a2a-4e29-be42-beac6414885d")
-    #get_cart_items_by_reference(access_token, "73d5abae-1a2a-4e29-be42-beac6414885d")
-
+    #print(get_cart_by_reference(access_token, 83609395))
+    #print(get_cart_items_by_reference(access_token, 83609395))
+    #print(remove_cart_item(access_token, "83609395", "1a6797f8-f561-4e56-a016-3380851f0845"))
     # products = get_all_products(access_token)
     # print(len(products["data"]))
     # products_id = [product["id"] for product in products["data"]]
-    # print(products_id)
-    # reference = "73d5abae-1a2a-4e29-be42-beac6414885d"
-    # print(add_product_to_cart(access_token, reference, products_id[0]))
 
+    # products_id = "1eb210ef-013b-487f-a4fd-615505f4c740"
+    # reference = "kama_pulya"
+    # print(add_product_to_cart(access_token, reference, products_id))
+
+    #print(get_cart_items_by_reference(access_token, ))
     #print(get_product_by_id(access_token, "1a6797f8-f561-4e56-a016-3380851f0845"))
     #print(get_price_product(access_token, price_book_id, "3"))
 
     #add_image_for_product(access_token, "1a6797f8-f561-4e56-a016-3380851f0845", "./images.jpeg")
     #print(get_file_by_product_id(access_token, "1a6797f8-f561-4e56-a016-3380851f0845"))
-    print(get_file_by_id(access_token, "edbcb730-77a2-4fa4-aca7-21f2be2cb1ae"))
+    #print(get_file_by_id(access_token, "edbcb730-77a2-4fa4-aca7-21f2be2cb1ae"))
+
+    #print(get_all_products_v2(access_token))
 

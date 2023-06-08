@@ -6,7 +6,16 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
-from store import get_all_products, get_token, get_product_by_id, get_product_price, get_file_by_product_id, get_file_by_id
+from store import (get_all_products,
+                   get_token,
+                   get_product_by_id,
+                   get_product_price,
+                   get_file_by_product_id,
+                   get_file_by_id,
+                   get_cart_by_reference,
+                   add_product_to_cart,
+                   get_cart_items_by_reference
+                   )
 from tools import save_image
 
 
@@ -33,7 +42,8 @@ def handle_menu(update, context):
         final_price = product_price["data"]["attributes"]["currencies"]["USD"]["amount"]
 
         template = f"{product_attributes['name']}\n\n" \
-                   f"${final_price} per kg\n\n" \
+                   f"${final_price} per kg\n" \
+                   f"100kg on stock\n\n" \
                    f"{product_attributes['description']}"
 
         product_file_id = get_file_by_product_id(access_token, product_id)["id"]
@@ -53,7 +63,13 @@ def handle_menu(update, context):
                 message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
                 context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
 
-        keyboard = [[InlineKeyboardButton("Назад", callback_data='back')]]
+        keyboard = [
+            [InlineKeyboardButton("1 kg", callback_data=f'1 {product_id}'),
+             InlineKeyboardButton("5 kg", callback_data=f'5 {product_id}'),
+             InlineKeyboardButton("10 kg", callback_data=f'10 {product_id}')],
+            [InlineKeyboardButton("Корзина", callback_data='cart')],
+            [InlineKeyboardButton("Назад", callback_data='back')]
+        ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.bot.edit_message_caption(chat_id=update.effective_chat.id, message_id=message.message_id,
                                          caption=template, parse_mode='Markdown', reply_markup=reply_markup)
@@ -61,16 +77,31 @@ def handle_menu(update, context):
 
 
 def handle_description(update, context):
-    products = get_all_products(access_token)["data"]
-    keyboard = [
-        [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in products
-    ]
+    if update.callback_query.data == 'back':
+        products = get_all_products(access_token)["data"]
+        keyboard = [
+            [InlineKeyboardButton(f"{product['attributes']['name']}", callback_data=f"{product['id']}")] for product in
+            products
+        ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text='Please choose',
-                             reply_markup=reply_markup)
-    return "MENU"
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text='Please choose',
+                                 reply_markup=reply_markup)
+        context.bot.delete_message(chat_id=update.effective_chat.id,
+                                   message_id=update.callback_query.message.message_id)
+        return "MENU"
+    elif update.callback_query.data == 'cart':
+        chat_id = update.callback_query.message.chat_id
+        cart_items = get_cart_items_by_reference(access_token, chat_id)
+
+    else:
+        chat_id = update.callback_query.message.chat_id
+        cart_id = get_cart_by_reference(access_token, chat_id)
+        quantity, product_id = update.callback_query.data.split()
+        add_product_to_cart(access_token, cart_id, product_id, quantity)
+        print("Товар добавлен")
+        return "HANDLE_DESCRIPTION"
 
 
 def handle_users_reply(update, context):
