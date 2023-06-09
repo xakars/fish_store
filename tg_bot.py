@@ -14,7 +14,8 @@ from store import (get_all_products,
                    get_cart_by_reference,
                    add_product_to_cart,
                    get_cart_items_by_reference,
-                   remove_cart_item
+                   remove_cart_item,
+                   create_customer
                    )
 from helper import get_cart_template, get_photo_path
 
@@ -171,10 +172,21 @@ def handle_description(update, context):
 
 
 def handle_buy(update, context):
+    access_token = get_token(client_id, client_secret)
+
     user_reply = update.message.text
+    user_name = update.effective_chat.first_name
     text = f"Вы прислали мне эту почту: {user_reply}"
-    context.bot.send_message(chat_id=update.effective_chat.id,text=text)
-    return "WAITING_EMAIL"
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    create_customer(access_token, user_name, user_reply)
+    text = f"Cпасибо за заказ, мы скоро свяжемся с вами"
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    keyboard = get_menu()
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text='Please choose',
+                             reply_markup=keyboard)
+    return "MENU"
+
 
 def handle_users_reply(update, context):
     if update.message:

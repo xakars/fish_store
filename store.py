@@ -98,3 +98,18 @@ def get_file_by_id(token, file_id):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()["data"]
+
+
+def create_customer(token, name, email):
+    url = "https://api.moltin.com/v2/customers"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    data = {
+        "data": {
+            "type": "customer",
+            "name": name,
+            "email": email,
+        }
+    }
+    response = requests.post(url, headers=headers, json=data)
+    response.raise_for_status()
+    return response.json()
