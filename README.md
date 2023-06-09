@@ -6,6 +6,10 @@
 Пример [демки](https://t.me/fish_store77_bot):
 
 
+https://github.com/xakars/fish_store/assets/73193926/c3cb45fd-2cf8-451d-bb4d-8f78e242382f
+
+
+
 ### Как запустить
 
 Для запуска сайта вам понадобится Python третьей версии.
