@@ -55,7 +55,7 @@ def handle_menu(update, context):
             chat_id=update.effective_chat.id,
             message_id=update.callback_query.message.message_id
         )
-        return 'HANDLE_CART'
+        return "HANDLE_CART"
 
     user_reply = update.callback_query
     product_id = update.callback_query.data
@@ -103,6 +103,7 @@ def get_user_cart(chat_id):
         [InlineKeyboardButton(f"Убрать из корзины {item['name']}", callback_data=f"{item['id']}")] for item in cart_items["data"]
     ]
     keyboard.append([InlineKeyboardButton("В меню", callback_data='menu')])
+    keyboard.append([InlineKeyboardButton("Оплатить", callback_data='buy')])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     return text, reply_markup
@@ -119,6 +120,11 @@ def handle_cart(update, context):
         context.bot.delete_message(chat_id=update.effective_chat.id,
                                    message_id=update.callback_query.message.message_id)
         return 'MENU'
+    elif update.callback_query.data == 'buy':
+        text = 'Пришлите, пожалуйста, ваш email:'
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=text)
+        return 'WAITING_EMAIL'
     else:
         chat_id = update.callback_query.message.chat_id
         product_id = update.callback_query.data
@@ -129,7 +135,7 @@ def handle_cart(update, context):
                                  reply_markup=keyboard)
         context.bot.delete_message(chat_id=update.effective_chat.id,
                                    message_id=update.callback_query.message.message_id)
-    return 'HANDLE_CART'
+    return "HANDLE_CART"
 
 
 def handle_description(update, context):
@@ -153,7 +159,7 @@ def handle_description(update, context):
                                  reply_markup=keyboard)
         context.bot.delete_message(chat_id=update.effective_chat.id, message_id=update.callback_query.message.message_id)
 
-        return 'HANDLE_CART'
+        return "HANDLE_CART"
 
     else:
         chat_id = update.callback_query.message.chat_id
@@ -163,6 +169,12 @@ def handle_description(update, context):
         update.callback_query.answer("Товар успешно добавлен в корзину!")
         return "HANDLE_DESCRIPTION"
 
+
+def handle_buy(update, context):
+    user_reply = update.message.text
+    text = f"Вы прислали мне эту почту: {user_reply}"
+    context.bot.send_message(chat_id=update.effective_chat.id,text=text)
+    return "WAITING_EMAIL"
 
 def handle_users_reply(update, context):
     if update.message:
@@ -182,7 +194,8 @@ def handle_users_reply(update, context):
         'START': start,
         'MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
-        'HANDLE_CART': handle_cart
+        'HANDLE_CART': handle_cart,
+        'WAITING_EMAIL': handle_buy
     }
     state_handler = states_functions[user_state]
     try:
