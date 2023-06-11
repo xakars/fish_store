@@ -22,8 +22,7 @@ from photo_save_tools import get_photo_path
 import textwrap
 
 
-def get_menu():
-    access_token = get_token(client_id, client_secret)
+def get_menu(access_token):
 
     products = get_all_products(access_token)["data"]
     keyboard = [
@@ -36,7 +35,8 @@ def get_menu():
 
 
 def start(update, context):
-    keyboard = get_menu()
+    access_token = get_token(client_id, client_secret)
+    keyboard = get_menu(access_token)
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text='Please choose',
                              reply_markup=keyboard)
@@ -118,7 +118,7 @@ def handle_cart(update, context):
     access_token = get_token(client_id, client_secret)
 
     if update.callback_query.data == 'menu':
-        keyboard = get_menu()
+        keyboard = get_menu(access_token)
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text='Please choose',
                                  reply_markup=keyboard)
@@ -147,7 +147,7 @@ def handle_description(update, context):
     access_token = get_token(client_id, client_secret)
 
     if update.callback_query.data == 'back':
-        keyboard = get_menu()
+        keyboard = get_menu(access_token)
         context.bot.send_message(chat_id=update.effective_chat.id,
                                  text='Please choose',
                                  reply_markup=keyboard)
@@ -185,7 +185,7 @@ def handle_buy(update, context):
     create_customer(access_token, user_name, user_reply)
     text = f"Cпасибо за заказ, мы скоро свяжемся с вами"
     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-    keyboard = get_menu()
+    keyboard = get_menu(access_token)
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text='Please choose',
                              reply_markup=keyboard)
