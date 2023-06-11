@@ -20,6 +20,7 @@ from store import (get_all_products,
 from format_helper import get_cart_template
 from photo_save_tools import get_photo_path
 import textwrap
+from functools import partial
 
 
 def get_menu(access_token):
@@ -192,7 +193,7 @@ def handle_buy(update, context):
     return "MENU"
 
 
-def handle_users_reply(update, context):
+def handle_users_reply(update, context, redis):
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -204,7 +205,7 @@ def handle_users_reply(update, context):
     if user_reply == '/start':
         user_state = 'START'
     else:
-        user_state = r.get(chat_id).decode("utf-8")
+        user_state = redis.get(chat_id).decode("utf-8")
 
     states_functions = {
         'START': start,
@@ -232,7 +233,7 @@ if __name__ == '__main__':
 
     updater = Updater(token=token, use_context=True)
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
-    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    dispatcher.add_handler(CallbackQueryHandler(partial(handle_users_reply, redis=r)))
+    dispatcher.add_handler(MessageHandler(Filters.text, partial(handle_users_reply, redis=r)))
+    dispatcher.add_handler(CommandHandler('start', partial(handle_users_reply, redis=r)))
     updater.start_polling()
