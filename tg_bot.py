@@ -17,8 +17,9 @@ from store import (get_all_products,
                    remove_cart_item,
                    create_customer
                    )
-from helper import get_cart_template
+from format_helper import get_cart_template
 from photo_save_tools import get_photo_path
+import textwrap
 
 
 def get_menu():
@@ -67,10 +68,12 @@ def handle_menu(update, context):
     product_price = get_product_price(access_token, price_book_id, product_attributes["sku"])
     final_price = product_price["data"]["attributes"]["currencies"]["USD"]["amount"]
 
-    template = f"{product_attributes['name']}\n\n" \
-               f"${final_price} per kg\n" \
-               f"100kg on stock\n\n" \
-               f"{product_attributes['description']}"
+    template = f"""
+        {product_attributes['name']}
+        {final_price} per kg
+        100kg on stock
+        {product_attributes['description']}
+    """
 
     product_file_id = get_file_by_product_id(access_token, product_id)["id"]
     prodict_photo = get_file_by_id(access_token, product_file_id)
@@ -87,9 +90,9 @@ def handle_menu(update, context):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=template)
+    message = context.bot.send_photo(chat_id=update.effective_chat.id, photo=photo, caption=textwrap.dedent(template))
     context.bot.edit_message_caption(chat_id=update.effective_chat.id, message_id=message.message_id,
-                                     caption=template, parse_mode='Markdown', reply_markup=reply_markup)
+                                     caption=textwrap.dedent(template), parse_mode='Markdown', reply_markup=reply_markup)
     context.bot.delete_message(chat_id=update.effective_chat.id, message_id=user_reply.message.message_id)
 
     return "HANDLE_DESCRIPTION"
