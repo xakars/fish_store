@@ -17,7 +17,8 @@ from store import (get_all_products,
                    remove_cart_item,
                    create_customer
                    )
-from helper import get_cart_template, get_photo_path
+from helper import get_cart_template
+from photo_save_tools import get_photo_path
 
 
 def get_menu():
