@@ -35,6 +35,7 @@ def get_menu(access_token):
 
 
 def start(update, context):
+    access_token = get_token(client_id, client_secret)
     keyboard = get_menu(access_token)
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text='Please choose',
@@ -43,6 +44,7 @@ def start(update, context):
 
 
 def handle_menu(update, context):
+    access_token = get_token(client_id, client_secret)
     if update.callback_query.data == 'cart':
         chat_id = update.callback_query.message.chat_id
         text, keyboard = get_user_cart(chat_id)
@@ -96,6 +98,7 @@ def handle_menu(update, context):
 
 
 def get_user_cart(chat_id):
+    access_token = get_token(client_id, client_secret)
     cart_items = get_cart_items_by_reference(access_token, chat_id)
     text = get_cart_template(cart_items)
     cart_items = get_cart_items_by_reference(access_token, chat_id)
@@ -110,6 +113,7 @@ def get_user_cart(chat_id):
 
 
 def handle_cart(update, context):
+    access_token = get_token(client_id, client_secret)
     if update.callback_query.data == 'menu':
         keyboard = get_menu(access_token)
         context.bot.send_message(chat_id=update.effective_chat.id,
@@ -137,6 +141,7 @@ def handle_cart(update, context):
 
 
 def handle_description(update, context):
+    access_token = get_token(client_id, client_secret)
     if update.callback_query.data == 'back':
         keyboard = get_menu(access_token)
         context.bot.send_message(chat_id=update.effective_chat.id,
@@ -167,6 +172,7 @@ def handle_description(update, context):
 
 
 def handle_buy(update, context):
+    access_token = get_token(client_id, client_secret)
     user_reply = update.message.text
     user_name = update.effective_chat.first_name
     text = f"Вы прислали мне эту почту: {user_reply}"
@@ -218,7 +224,6 @@ if __name__ == '__main__':
     client_id = os.environ["CLIENT_ID"]
     client_secret = os.environ["CLIENT_SECRET"]
     price_book_id = os.environ["PRICE_BOOK_ID"]
-    access_token = get_token(client_id, client_secret)
 
     updater = Updater(token=token, use_context=True)
     dispatcher = updater.dispatcher

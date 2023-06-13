@@ -1,13 +1,37 @@
 import requests
+import datetime
 
 
-def get_token(client_id, client_secret):
+access_token = None
+timestamp = None
+expires_in = None
+
+
+def refresh_token(client_id, client_secret):
     url = "https://api.moltin.com/oauth/access_token"
     data = {"client_id": client_id, "client_secret": client_secret, "grant_type": "client_credentials"}
     response = requests.get(url, data=data)
     response.raise_for_status()
-    bearer_token = response.json()["access_token"]
-    return bearer_token
+    dict_response = response.json()
+    new_timestamp = dict_response["expires"]
+    new_expires_in = dict_response["expires_in"]
+    new_token = dict_response["access_token"]
+    return new_timestamp, new_expires_in, new_token
+
+
+def get_token(client_id, client_secret):
+    global access_token, timestamp, expires_in
+    if not access_token:
+        timestamp, expires_in, access_token = refresh_token(client_id, client_secret)
+        return access_token
+
+    cr_time = datetime.datetime.now().timestamp()
+    token_live_cycle = timestamp + expires_in
+    if cr_time >= token_live_cycle:
+        timestamp, expires_in, access_token = refresh_token(client_id, client_secret)
+        return access_token
+    else:
+        return access_token
 
 
 def get_all_products(token):
